@@ -1,6 +1,6 @@
-// Fill these in to turn on accounts and sync (see README). Leave empty to run in local-only mode.
-// The anon key is safe to publish: row-level security protects the data.
+// Supabase connection. The publishable key is safe to publish: row-level security protects the data.
+// Leave both values empty to run in local-only mode.
 window.DAILY_FOCUS_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: ""
+  supabaseUrl: "https://gsdihbofvngjtifblmuz.supabase.co",
+  supabaseAnonKey: "sb_publishable_yeWI1Zto7TaTulnTgmS8yg_swrRS66w"
 };
