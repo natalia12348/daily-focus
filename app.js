@@ -87,6 +87,8 @@
     $("bar").setAttribute("aria-valuenow", pct);
     $("progText").textContent = total ? "Today: " + doneToday + " of " + total + " done (" + pct + "%)" : "Add your first task";
 
+    mood(total, doneToday);
+
     var s = streak();
     $("streak").hidden = s < 1;
     $("streakN").textContent = s;
@@ -98,6 +100,26 @@
       sw.innerHTML = '<div class="spot"><small>Do just this one now</small><p>' + esc(f.text) + '</p><div class="acts"><button type="button" data-spot="done">Done! ✓</button><button type="button" class="ghost" data-spot="again">Pick another</button><button type="button" class="ghost" data-spot="close">Close</button></div></div>';
     } else { sw.innerHTML = ""; focusId = null; }
   }
+
+  /* ---------- mascot ---------- */
+  var CHEERS = {
+    start: ["YOU CAN DO IT!", "One tiny step is enough!", "Start small. I believe in you!", "YOU'VE GOT THIS!"],
+    going: ["Look at you go!", "Keep going, you're on fire!", "YOU CAN DO IT!", "Nice! Next one?"],
+    done: ["SO PROUD OF YOU!", "All done! Dance time!", "You did it! YOU CAN DO IT, and you DID!"]
+  };
+  var cheerKey = "", cheerIdx = 0;
+  function mood(total, doneToday) {
+    var key = total && doneToday >= total ? "done" : doneToday ? "going" : "start";
+    if (key === cheerKey) return;
+    cheerKey = key; cheerIdx = 0;
+    $("bubble").textContent = CHEERS[key][0];
+  }
+  $("bear").addEventListener("click", function () {
+    var list = CHEERS[cheerKey || "start"];
+    cheerIdx = (cheerIdx + 1) % list.length;
+    $("bubble").textContent = list[cheerIdx];
+    burst($("bear"), true);
+  });
 
   /* ---------- actions ---------- */
   function byId(id) { return tasks.filter(function (t) { return t.id === id; })[0]; }

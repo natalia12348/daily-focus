@@ -14,6 +14,8 @@ html { color-scheme: light; }
   --p2: #f97316;
   --p3: #8b5cf6;
   --p4: #0ea5c6;
+  --bear: #c98a62;
+  --bear-light: #f3d2b3;
   --shadow: 0 6px 24px rgba(230, 51, 143, .12);
   --font-display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
   --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -22,7 +24,9 @@ html { color-scheme: light; }
   :root:not([data-theme="light"]) {
     --bg: #1d0a18; --surface: #2c1226; --surface-2: #3a1830; --fg: #ffe9f3; --muted: #c895b0;
     --line: #4a2040; --accent: #ff5db1; --accent-fg: #2a0a1e;
-    --p1: #ff5c7c; --p2: #ff9a4d; --p3: #b69bff; --p4: #4fd0ee;
+    --bear: #d9a07a; --bear-light: #f3d2b3;
+    --bear: #d9a07a; --bear-light: #f3d2b3;
+  --p1: #ff5c7c; --p2: #ff9a4d; --p3: #b69bff; --p4: #4fd0ee;
     --shadow: 0 6px 24px rgba(0, 0, 0, .35);
     color-scheme: dark;
   }
@@ -180,3 +184,25 @@ dialog form { display: flex; flex-direction: column; gap: 12px; }
 dialog h2 { margin: 0; color: var(--fg); font-size: 20px; text-transform: none; letter-spacing: 0; }
 dialog input { border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 12px 14px; font-size: 16px; color: var(--fg); }
 dialog .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* mascot: Boo the bear dances above the list and cheers you on */
+.mascot { display: flex; align-items: center; gap: 10px; }
+.bear { flex: none; width: 92px; height: 108px; background: none; border: 0; padding: 0; cursor: pointer; border-radius: 20px; }
+.bear svg { width: 100%; height: 100%; overflow: visible; }
+.fur { fill: var(--bear); }
+.belly { fill: var(--bear-light); }
+.ink { fill: var(--fg); }
+.mouth { stroke: var(--fg); stroke-width: 2.5; stroke-linecap: round; }
+.blush { fill: var(--accent); opacity: .35; }
+.dance { transform-origin: 60px 126px; animation: sway 1.2s ease-in-out infinite; }
+.arm { transform-box: fill-box; transform-origin: 50% 12%; }
+.armL { animation: waveL 1.2s ease-in-out infinite; }
+.armR { animation: waveR 1.2s ease-in-out infinite; }
+.legs { transform-box: fill-box; transform-origin: 50% 100%; animation: step 0.6s ease-in-out infinite alternate; }
+.bear:active .dance { animation-duration: .35s; }
+.bubble { position: relative; margin: 0; background: var(--accent); color: var(--accent-fg); padding: 12px 16px; border-radius: 18px 18px 18px 4px; font-family: var(--font-display); font-weight: 800; font-size: clamp(17px, 4.6vw, 22px); line-height: 1.15; text-wrap: balance; box-shadow: var(--shadow); min-width: 0; }
+@keyframes sway { 0%, 100% { transform: translateY(0) rotate(-4deg); } 25% { transform: translateY(-8px) rotate(0); } 50% { transform: translateY(0) rotate(4deg); } 75% { transform: translateY(-8px) rotate(0); } }
+@keyframes waveL { 0%, 100% { transform: rotate(25deg); } 50% { transform: rotate(150deg); } }
+@keyframes waveR { 0%, 100% { transform: rotate(-150deg); } 50% { transform: rotate(-25deg); } }
+@keyframes step { from { transform: scaleY(1); } to { transform: scaleY(.85); } }
+@media (prefers-reduced-motion: reduce) { .dance, .arm, .legs { animation: none; } }

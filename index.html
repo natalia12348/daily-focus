@@ -24,6 +24,29 @@
 <canvas id="fx" aria-hidden="true"></canvas>
 <main id="app" hidden>
   <header>
+    <div class="mascot">
+      <button type="button" class="bear" id="bear" aria-label="Boo the bear. Tap for a pep talk">
+        <svg viewBox="0 0 120 140" role="img" aria-hidden="true">
+          <g class="dance">
+            <g class="legs"><ellipse cx="44" cy="126" rx="14" ry="9" class="fur"/><ellipse cx="76" cy="126" rx="14" ry="9" class="fur"/></g>
+            <ellipse cx="60" cy="96" rx="30" ry="32" class="fur"/>
+            <ellipse cx="60" cy="102" rx="19" ry="21" class="belly"/>
+            <g class="arm armL"><rect x="14" y="80" width="12" height="34" rx="6" class="fur"/></g>
+            <g class="arm armR"><rect x="94" y="80" width="12" height="34" rx="6" class="fur"/></g>
+            <circle cx="30" cy="30" r="14" class="fur"/><circle cx="30" cy="30" r="7" class="belly"/>
+            <circle cx="90" cy="30" r="14" class="fur"/><circle cx="90" cy="30" r="7" class="belly"/>
+            <circle cx="60" cy="52" r="34" class="fur"/>
+            <ellipse cx="60" cy="64" rx="15" ry="11" class="belly"/>
+            <circle cx="47" cy="48" r="4" class="ink"/><circle cx="73" cy="48" r="4" class="ink"/>
+            <circle cx="48.4" cy="46.6" r="1.4" fill="#fff"/><circle cx="74.4" cy="46.6" r="1.4" fill="#fff"/>
+            <ellipse cx="60" cy="58" rx="5" ry="3.6" class="ink"/>
+            <path d="M52 66 Q60 74 68 66" fill="none" class="mouth"/>
+            <circle cx="38" cy="60" r="5" class="blush"/><circle cx="82" cy="60" r="5" class="blush"/>
+          </g>
+        </svg>
+      </button>
+      <p class="bubble" id="bubble" role="status">YOU CAN DO IT!</p>
+    </div>
     <div class="top">
       <div>
         <div class="date" id="date"></div>
