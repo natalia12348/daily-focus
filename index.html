@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Focus</title>
+<meta name="description" content="A pink, ADHD-friendly daily to-do list with priorities, streaks, a quote of the day, AI-planned goals and habit tracking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=DM+Sans:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<section class="auth" id="auth" hidden>
+  <h1>Daily <em>Focus</em></h1>
+  <p>A calm, pink to-do list for busy brains. Sign in to keep your tasks, goals and habits on every device.</p>
+  <form id="authForm" style="display:flex;flex-direction:column;gap:12px">
+    <input type="email" id="authEmail" placeholder="you@example.com" autocomplete="email" required aria-label="Email">
+    <button class="btn-main" type="submit" id="authBtn">Email me a sign-in link</button>
+  </form>
+  <p id="authMsg" role="status"></p>
+  <button class="link" type="button" id="authLocal">Continue without an account (this device only)</button>
+</section>
+<canvas id="fx" aria-hidden="true"></canvas>
+<main id="app" hidden>
+  <header>
+    <div class="top">
+      <div>
+        <div class="date" id="date"></div>
+        <h1 id="hello">Hi! What are we <em>doing</em> today?</h1>
+      </div>
+      <div class="streak" id="streak" hidden>🔥 <b id="streakN">0</b> <span id="streakL">days</span></div>
+    </div>
+    <figure class="quote" id="quote" aria-label="Quote of the day"><small>Quote of the day</small><p id="quoteText"></p><cite id="quoteBy"></cite></figure>
+    <div class="progress">
+      <div class="bar" role="progressbar" aria-label="Daily progress" id="bar"><i id="barFill"></i></div>
+      <small id="progText">Add your first task</small>
+    </div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" id="tabToday" aria-selected="true">Today</button>
+    <button type="button" role="tab" id="tabGoals" aria-selected="false">My goals</button>
+    <button type="button" role="tab" id="tabHabits" aria-selected="false">Habits</button>
+  </div>
+
+  <div class="view" id="viewToday">
+
+  <form class="add" id="addForm">
+    <div class="row">
+      <input type="text" id="newText" placeholder="What do you need to do?" maxlength="140" autocomplete="off" aria-label="New task">
+      <button class="btn-main" type="submit">Add</button>
+    </div>
+    <div class="prios" role="radiogroup" aria-label="Priority">
+      <label data-p="1"><input type="radio" name="prio" value="1"><span>Urgent</span></label>
+      <label data-p="2"><input type="radio" name="prio" value="2" checked><span>Important</span></label>
+      <label data-p="3"><input type="radio" name="prio" value="3"><span>Medium</span></label>
+      <label data-p="4"><input type="radio" name="prio" value="4"><span>Someday</span></label>
+    </div>
+  </form>
+
+  <div id="spotWrap"></div>
+  <button class="pick" id="pickBtn" type="button" hidden>🎲 I don't know where to start</button>
+
+  <section>
+    <h2 id="openH" hidden>To do</h2>
+    <ul id="openList"></ul>
+    <div class="empty" id="empty"><b>Calm and empty ✨</b>Add your first task above. Even a tiny one counts.</div>
+  </section>
+
+  <details id="doneWrap" hidden>
+    <summary id="doneSum">Done</summary>
+    <ul id="doneList"></ul>
+  </details>
+  </div>
+
+  <div class="view" id="viewGoals" hidden>
+    <form class="add" id="goalForm">
+      <div class="row">
+        <input type="text" id="goalText" placeholder="What do you want to learn or achieve?" maxlength="100" autocomplete="off" aria-label="New goal">
+        <button class="btn-main" type="submit" id="goalBtn">Plan it ✨</button>
+      </div>
+      <div class="row" style="flex-wrap:wrap">
+        <button class="btn-alt" type="button" id="goalOwn">✍️ I'll write my own plan</button>
+        <button class="btn-alt" type="button" id="goalPasteToggle" aria-expanded="false">📋 Paste a whole plan</button>
+      </div>
+      <div id="pasteBox" hidden style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="pasteText" rows="8" aria-label="Whole plan" placeholder="Paste a plan, e.g.:&#10;Stage 1: Basics&#10;- Read the Manifesto&#10;- Watch a video&#10;Stage 2: Scrum&#10;- Draw a cheat sheet"></textarea>
+        <small class="note" style="text-align:left">A line starting with “Stage”, “Phase” or “#”, or ending with a colon, starts a new stage. Every other line becomes a task (bullets and numbers are removed). The goal name comes from the field above.</small>
+        <button class="btn-main" type="button" id="pasteGo">Add plan</button>
+      </div>
+      <small class="note">Try “Agile”, “Spanish” or “run 5 km”. AI splits it into stages and small tasks. Or click “I'll write my own plan” and add stages and tasks yourself.</small>
+    </form>
+    <div id="goalList" class="view"></div>
+    <div class="empty" id="goalEmpty"><b>What's your big dream?</b>Type a goal above and it gets split into stages. Then pick tasks and send them to Today.</div>
+  </div>
+  <div class="view" id="viewHabits" hidden>
+    <form class="add" id="habitForm">
+      <div class="row">
+        <input type="text" id="habitText" placeholder="A daily habit, e.g. Spanish" maxlength="40" autocomplete="off" aria-label="New habit">
+        <button class="btn-main" type="submit">Add</button>
+      </div>
+      <div class="chips" id="chips" aria-label="Quick add"></div>
+    </form>
+    <div id="habitList" class="view"></div>
+    <div class="empty" id="habitEmpty"><b>No habits yet</b>Add one above, like Spanish, English or drinking water. Slide it to done every day and watch your week fill up.</div>
+  </div>
+    <div class="foot">
+    <span class="note" id="who"></span>
+    <button type="button" id="keyBtn">⚙ AI key</button>
+    <button type="button" id="outBtn" hidden>Sign out</button>
+  </div>
+  <p class="note" id="note"></p>
+</main>
+<div class="toast" id="toast" hidden></div>
+
+<dialog id="keyDlg" aria-labelledby="keyTitle">
+  <form method="dialog" id="keyForm">
+    <h2 id="keyTitle">AI key</h2>
+    <p class="note" style="text-align:left">AI features (break a task into steps, plan a goal) use your own Anthropic API key. It is stored only in this browser and sent only to api.anthropic.com. Without a key, everything else still works.</p>
+    <input type="password" id="keyInput" placeholder="sk-ant-..." autocomplete="off" aria-label="Anthropic API key">
+    <div class="acts">
+      <button class="btn-main" type="submit" value="save">Save</button>
+      <button class="btn-alt" type="button" id="keyClear">Remove key</button>
+      <button class="btn-alt" type="submit" value="cancel">Close</button>
+    </div>
+  </form>
+</dialog>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
