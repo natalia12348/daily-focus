@@ -165,7 +165,7 @@
   function splitTask(t, btn) {
     Promise.resolve(ai).then(function (sample) {
       btn.disabled = true; btn.textContent = "Thinking…";
-      var prompt = "Break this task into 3 to 6 very small, concrete steps in English, for a person with ADHD. The first step must take under 2 minutes. Each step starts with a verb and has at most 8 words. Task: \"" + t.text.replace(/"/g, "'") + "\". Reply with only a JSON array of strings, e.g. [\"step 1\",\"step 2\"].";
+      var prompt = "Break this task into 3 to 6 very small, concrete steps in English, for someone who gets overwhelmed easily. The first step must take under 2 minutes. Each step starts with a verb and has at most 8 words. Task: \"" + t.text.replace(/"/g, "'") + "\". Reply with only a JSON array of strings, e.g. [\"step 1\",\"step 2\"].";
       return sample.json(prompt, { modelTier: "quick" }).then(function (arr) {
         var steps = (Array.isArray(arr) ? arr : (arr && arr.steps) || []).filter(function (s) { return typeof s === "string" && s.trim(); }).slice(0, 6).map(function (s) { return { t: s.trim(), done: false }; });
         if (!steps.length) throw new Error("empty");
@@ -266,7 +266,7 @@
     var btn = $("goalBtn");
     Promise.resolve(ai).then(function (sample) {
       btn.disabled = true; btn.textContent = "Planning…";
-      var prompt = "A person with ADHD wants to achieve this goal: \"" + v.replace(/"/g, "'") + "\". Plan the path in English: 3 to 5 stages from basics to the goal, each with 3 to 5 small, concrete tasks (each starts with a verb, at most 10 words, doable in 5 to 45 minutes). Give each stage a short name without a number. Reply with only JSON in this format: {\"stages\":[{\"name\":\"stage name\",\"tasks\":[\"task\"]}]}.";
+      var prompt = "Someone who gets overwhelmed easily wants to achieve this goal: \"" + v.replace(/"/g, "'") + "\". Plan the path in English: 3 to 5 stages from basics to the goal, each with 3 to 5 small, concrete tasks (each starts with a verb, at most 10 words, doable in 5 to 45 minutes). Give each stage a short name without a number. Reply with only JSON in this format: {\"stages\":[{\"name\":\"stage name\",\"tasks\":[\"task\"]}]}.";
       return sample.json(prompt, { modelTier: "default" }).then(function (r) {
         var stages = normStages(r);
         if (!stages.length) throw new Error("empty");
