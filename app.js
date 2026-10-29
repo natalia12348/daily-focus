@@ -436,16 +436,25 @@
     if (m && +m[1] < 24 && +m[2] < 60) return { t: m[3].trim().slice(0, 140), time: String(m[1]).padStart(2, "0") + ":" + m[2], done: false };
     return line ? { t: line.slice(0, 140), time: "", done: false } : null;
   }
+  /* timed steps slot in by time; steps without a time stay where they are (at the end) */
+  function addToPlan(p, it) {
+    if (!it.time) { p.items.push(it); return; }
+    var at = -1, last = -1;
+    p.items.forEach(function (x, i) { if (x.time) { last = i; if (at < 0 && x.time > it.time) at = i; } });
+    p.items.splice(at >= 0 ? at : last + 1, 0, it);
+  }
   $("planForm").addEventListener("submit", function (e) {
     e.preventDefault();
     var t = $("planText").value.trim(); if (!t) return;
-    var p = todayPlan(); p.items.push({ t: t.slice(0, 140), time: $("planTime").value, done: false });
+    var it = parsePlanLine(t), tm = $("planTime").value;
+    if (tm) it = { t: t.slice(0, 140), time: tm, done: false };
+    var p = todayPlan(); addToPlan(p, it);
     $("planText").value = ""; $("planTime").value = ""; savePlan(p); $("planText").focus();
   });
   $("planPasteGo").addEventListener("click", function () {
     var items = $("planPaste").value.split(/\r?\n/).map(parsePlanLine).filter(Boolean);
     if (!items.length) return;
-    var p = todayPlan(); p.items = p.items.concat(items);
+    var p = todayPlan(); items.forEach(function (it) { addToPlan(p, it); });
     $("planPaste").value = ""; $("planPasteBox").open = false; savePlan(p);
   });
   $("planClear").addEventListener("click", function () {
