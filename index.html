@@ -65,6 +65,7 @@
     <button type="button" role="tab" id="tabToday" aria-selected="true">Today</button>
     <button type="button" role="tab" id="tabGoals" aria-selected="false">My goals</button>
     <button type="button" role="tab" id="tabHabits" aria-selected="false">Habits</button>
+    <button type="button" role="tab" id="tabPlan" aria-selected="false">Plan of the day</button>
   </div>
 
   <div class="view" id="viewToday">
@@ -127,6 +128,28 @@
     </form>
     <div id="habitList" class="view"></div>
     <div class="empty" id="habitEmpty"><b>No habits yet</b>Add one above, like Spanish, English or drinking water. Slide it to done every day and watch your week fill up.</div>
+  </div>
+  <div class="view" id="viewPlan" hidden>
+    <form class="add" id="planForm">
+      <div class="row">
+        <input type="time" id="planTime" aria-label="Time (optional)">
+        <input type="text" id="planText" placeholder="Next thing on your plan" maxlength="140" autocomplete="off" aria-label="Plan step">
+        <button class="btn-main" type="submit">Add</button>
+      </div>
+      <details id="planPasteBox">
+        <summary>📋 Paste the whole day</summary>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <textarea id="planPaste" rows="7" aria-label="Whole plan of the day" placeholder="One step per line, e.g.:&#10;8:00 Gym&#10;10:00 Work on the report&#10;13:00 Lunch&#10;Call mom"></textarea>
+          <button class="btn-main" type="button" id="planPasteGo">Add to plan</button>
+        </div>
+      </details>
+    </form>
+    <section class="goal">
+      <div class="goal-h"><h3>Today's plan</h3><button type="button" id="planClear" hidden>Clear</button></div>
+      <small class="note" id="planProg" style="text-align:left" hidden></small>
+      <ul id="planList"></ul>
+    </section>
+    <div class="empty" id="planEmpty"><b>No plan yet</b>Write what you will do today, in order. Tick each step off as you go.</div>
   </div>
     <div class="foot">
     <span class="note" id="who"></span>

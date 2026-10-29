@@ -2,7 +2,7 @@
   var PR = { 1: { n: "Urgent" }, 2: { n: "Important" }, 3: { n: "Medium" }, 4: { n: "Someday" } };
   var tasks = [];
   var focusId = null;
-  var store = null, goalStore = null, goals = [], habitStore = null, habits = [];
+  var store = null, goalStore = null, goals = [], habitStore = null, habits = [], planStore = null, plans = [];
   var $ = function (id) { return document.getElementById(id); };
   var CHECK = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5l4 4 8-9"/></svg>';
 
@@ -404,7 +404,64 @@
     write(habitStore.put(copy));
   });
 
-  var TABS = { today: ["tabToday", "viewToday"], goals: ["tabGoals", "viewGoals"], habits: ["tabHabits", "viewHabits"] };
+  /* ---------- plan of the day ---------- */
+  function planId() { return "plan-" + dayKey(Date.now()); }
+  function todayPlan() {
+    var id = planId();
+    var p = plans.filter(function (x) { return x.id === id; })[0];
+    return p ? JSON.parse(JSON.stringify(p)) : { id: id, items: [] };
+  }
+  function renderPlan() {
+    var p = todayPlan(), ul = $("planList"); ul.innerHTML = "";
+    p.items.forEach(function (it, i) {
+      var li = document.createElement("li");
+      li.className = "pitem" + (it.done ? " pdone" : ""); li.dataset.i = i;
+      li.innerHTML = '<button type="button" class="gc" role="checkbox" aria-checked="' + !!it.done + '" aria-label="Done: ' + esc(it.t) + '" data-p="done">' + (it.done ? "\u2713" : "") + "</button>" +
+        (it.time ? '<b class="ptime">' + esc(it.time) + "</b>" : "") + "<span>" + esc(it.t) + "</span>" +
+        '<button type="button" class="x" data-p="up" aria-label="Move up"' + (i === 0 ? " disabled" : "") + '>\u2191</button>' +
+        '<button type="button" class="x" data-p="down" aria-label="Move down"' + (i === p.items.length - 1 ? " disabled" : "") + '>\u2193</button>' +
+        '<button type="button" class="x" data-p="del" aria-label="Delete">\u2715</button>';
+      ul.appendChild(li);
+    });
+    var done = p.items.filter(function (it) { return it.done; }).length;
+    $("planEmpty").hidden = !!p.items.length;
+    $("planProg").hidden = !p.items.length;
+    $("planProg").textContent = done + " of " + p.items.length + " done" + (p.items.length && done === p.items.length ? " \uD83C\uDF89" : "");
+    $("planClear").hidden = !p.items.length;
+  }
+  function savePlan(p) { write(planStore.put(p)); }
+  function parsePlanLine(line) {
+    line = line.replace(/^\s*(?:[-*\u2022]|\d+[.)])\s+/, "").trim();
+    var m = line.match(/^(\d{1,2})[:.](\d{2})\s*[-\u2013:]?\s*(.+)$/);
+    if (m && +m[1] < 24 && +m[2] < 60) return { t: m[3].trim().slice(0, 140), time: String(m[1]).padStart(2, "0") + ":" + m[2], done: false };
+    return line ? { t: line.slice(0, 140), time: "", done: false } : null;
+  }
+  $("planForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var t = $("planText").value.trim(); if (!t) return;
+    var p = todayPlan(); p.items.push({ t: t.slice(0, 140), time: $("planTime").value, done: false });
+    $("planText").value = ""; $("planTime").value = ""; savePlan(p); $("planText").focus();
+  });
+  $("planPasteGo").addEventListener("click", function () {
+    var items = $("planPaste").value.split(/\r?\n/).map(parsePlanLine).filter(Boolean);
+    if (!items.length) return;
+    var p = todayPlan(); p.items = p.items.concat(items);
+    $("planPaste").value = ""; $("planPasteBox").open = false; savePlan(p);
+  });
+  $("planClear").addEventListener("click", function () {
+    if (!confirm("Clear the whole plan for today?")) return;
+    var p = todayPlan(); p.items = []; savePlan(p);
+  });
+  $("planList").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-p]"); if (!b) return;
+    var i = +b.closest(".pitem").dataset.i, p = todayPlan(), it = p.items[i]; if (!it) return;
+    if (b.dataset.p === "done") { it.done = !it.done; if (it.done) burst(b, true); }
+    else if (b.dataset.p === "del") p.items.splice(i, 1);
+    else { var j = b.dataset.p === "up" ? i - 1 : i + 1; if (j < 0 || j >= p.items.length) return; p.items[i] = p.items[j]; p.items[j] = it; }
+    savePlan(p);
+  });
+
+  var TABS = { today: ["tabToday", "viewToday"], goals: ["tabGoals", "viewGoals"], habits: ["tabHabits", "viewHabits"], plan: ["tabPlan", "viewPlan"] };
   function showTab(name) {
     Object.keys(TABS).forEach(function (k) {
       $(TABS[k][1]).hidden = k !== name;
@@ -414,6 +471,7 @@
   $("tabToday").addEventListener("click", function () { showTab("today"); });
   $("tabGoals").addEventListener("click", function () { showTab("goals"); });
   $("tabHabits").addEventListener("click", function () { showTab("habits"); });
+  $("tabPlan").addEventListener("click", function () { showTab("plan"); });
 
   /* ---------- quote of the day ---------- */
   var QUOTES = [
@@ -461,27 +519,29 @@
   $("hello").innerHTML = greet + "! What are we <em>doing</em> today?";
   $("date").textContent = new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" });
 
-  function start(s, gs, hs) {
-    store = s; goalStore = gs; habitStore = hs;
+  function start(s, gs, hs, ps) {
+    store = s; goalStore = gs; habitStore = hs; planStore = ps;
     $("note").textContent = s.local ? "Tasks are saved only in this browser (no account)." : "Your tasks are private and synced to your account.";
     s.subscribe(function (list) { tasks = list; render(); });
     gs.subscribe(function (list) { goals = list; renderGoals(); });
     hs.subscribe(function (list) { habits = list; renderHabits(); });
+    ps.subscribe(function (list) { plans = list; renderPlan(); });
   }
-  render(); renderGoals(); renderHabits();
+  render(); renderGoals(); renderHabits(); renderPlan();
 
   function startLocal() {
     $("auth").hidden = true; $("app").hidden = false;
-    start(localStore("dailyfocus-tasks"), localStore("dailyfocus-goals"), localStore("dailyfocus-habits"));
+    start(localStore("dailyfocus-tasks"), localStore("dailyfocus-goals"), localStore("dailyfocus-habits"), localStore("dailyfocus-plans"));
   }
 
   /* each row belongs to one user; Postgres row-level security enforces it (see supabase/schema.sql) */
   function supaStore(client, table, uid) {
-    var cache = [], subs = [];
+    var cache = [], subs = [], pending = 0;
     function emit() { subs.forEach(function (f) { f(cache.slice()); }); }
     function load() {
       return client.from(table).select("id,data").then(function (r) {
         if (r.error) { toast("Could not load your data"); return; }
+        if (pending) return; // a save is in flight: this answer may be stale
         cache = r.data.map(function (row) { return Object.assign({}, row.data, { id: row.id }); });
         emit();
       });
@@ -495,11 +555,13 @@
         var i = cache.findIndex(function (x) { return x.id === t.id; });
         if (i >= 0) cache[i] = t; else cache.push(t);
         emit();
-        return Promise.resolve(client.from(table).upsert({ user_id: uid, id: t.id, data: body }, { onConflict: "user_id,id" })).then(function (r) { if (r.error) throw r.error; });
+        pending++;
+        return Promise.resolve(client.from(table).upsert({ user_id: uid, id: t.id, data: body }, { onConflict: "user_id,id" })).then(function (r) { if (r.error) throw r.error; }).catch(function (e) { pending--; load(); throw e; }).then(function () { pending--; });
       },
       remove: function (id) {
         cache = cache.filter(function (x) { return x.id !== id; }); emit();
-        return Promise.resolve(client.from(table).delete().eq("id", id)).then(function (r) { if (r.error) throw r.error; });
+        pending++;
+        return Promise.resolve(client.from(table).delete().eq("id", id)).then(function (r) { if (r.error) throw r.error; }).catch(function (e) { pending--; load(); throw e; }).then(function () { pending--; });
       }
     };
   }
@@ -551,7 +613,7 @@
       $("auth").hidden = true; $("app").hidden = false;
       $("who").textContent = session.user.email || "";
       $("outBtn").hidden = false;
-      start(supaStore(client, "tasks", uid), supaStore(client, "goals", uid), supaStore(client, "habits", uid));
+      start(supaStore(client, "tasks", uid), supaStore(client, "goals", uid), supaStore(client, "habits", uid), supaStore(client, "plans", uid));
     }
     client.auth.getSession().then(function (r) { if (r.data.session) begin(r.data.session); else showAuth(); });
     client.auth.onAuthStateChange(function (ev, session) {

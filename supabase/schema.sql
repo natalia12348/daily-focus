@@ -3,7 +3,7 @@
 do $$
 declare t text;
 begin
-  foreach t in array array['tasks', 'goals', 'habits'] loop
+  foreach t in array array['tasks', 'goals', 'habits', 'plans'] loop
     execute format('create table if not exists public.%I (
       user_id uuid not null default auth.uid() references auth.users on delete cascade,
       id text not null,
