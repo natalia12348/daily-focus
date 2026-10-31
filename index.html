@@ -102,7 +102,7 @@
   <div class="view" id="viewWeek" hidden>
     <form class="add" id="weekForm">
       <div class="row">
-        <select id="weekDay" aria-label="Day"></select>
+        <input type="date" id="weekDate" aria-label="Date">
         <input type="time" id="weekTime" aria-label="Time (optional)">
       </div>
       <div class="row">
@@ -113,9 +113,10 @@
     <div class="wkswitch" role="group" aria-label="Week">
       <button type="button" id="weekThis" aria-pressed="true">This week</button>
       <button type="button" id="weekNext" aria-pressed="false">Next week</button>
+      <button type="button" id="weekMonth" aria-pressed="false">Month</button>
     </div>
     <div id="weekDays" class="view"></div>
-    <p class="note">Days that have passed clear themselves, so each week starts fresh.</p>
+    <p class="note">Plan as far ahead as you like. Days that have passed clear themselves.</p>
   </div>
   <div class="view" id="viewGoals" hidden>
     <form class="add" id="goalForm">

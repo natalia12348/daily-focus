@@ -470,73 +470,109 @@
     savePlan(p);
   });
 
-  /* ---------- week planner ---------- */
+  /* ---------- calendar: this week, next week or a whole month; one doc per month ---------- */
   var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  var weekOff = 0;
-  function weekStart(off) {
-    var d = new Date(); d.setHours(12, 0, 0, 0);
-    d.setDate(d.getDate() - (d.getDay() + 6) % 7 + 7 * off);
-    return d;
-  }
-  function weekId(off) { return "week-" + dayKey(weekStart(off).getTime()); }
-  function todayIdx() { return (new Date().getDay() + 6) % 7; }
-  function weekDoc(off) {
-    var id = weekId(off);
+  var MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  var calView = "w0", monthOff = 0, selDate = "";
+  function calDoc(mk) {
+    var id = "cal-" + mk;
     var p = plans.filter(function (x) { return x.id === id; })[0];
     return p ? JSON.parse(JSON.stringify(p)) : { id: id, items: [] };
   }
-  /* finished days and old weeks are dropped, so every week starts empty */
-  function pruneWeeks() {
+  function saveCal(p) { write(planStore.put(p)); }
+  function dateAt(base, add) { var d = new Date(base.getTime()); d.setDate(d.getDate() + add); return d; }
+  function weekStart(off) {
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    return dateAt(d, -((d.getDay() + 6) % 7) + 7 * off);
+  }
+  /* finished days and old months are dropped, so the calendar only ever holds what is still ahead */
+  function pruneCal() {
     if (!planStore) return;
-    var cur = weekId(0);
-    plans.forEach(function (x) { if (x.id.indexOf("week-") === 0 && x.id < cur) write(planStore.remove(x.id)); });
-    var p = weekDoc(0), t = todayIdx();
-    var kept = p.items.filter(function (it) { return it.d >= t; });
-    if (kept.length !== p.items.length) { p.items = kept; saveWeek(p); }
-  }
-  function saveWeek(p) { write(planStore.put(p)); }
-  function renderWeek() {
-    pruneWeeks();
-    var p = weekDoc(weekOff), t = weekOff === 0 ? todayIdx() : 0, box = $("weekDays"), start = weekStart(weekOff);
-    box.innerHTML = "";
-    DAYS.forEach(function (name, d) {
-      var date = new Date(start.getTime()); date.setDate(start.getDate() + d);
-      var past = d < t, isToday = weekOff === 0 && d === t;
-      var items = p.items.map(function (it, i) { return { it: it, i: i }; }).filter(function (x) { return x.it.d === d; });
-      var sec = document.createElement("section");
-      sec.className = "goal wday" + (past ? " wpast" : "") + (isToday ? " wtoday" : "");
-      sec.innerHTML = '<div class="goal-h"><h3>' + name + (isToday ? " <em>today</em>" : "") + "</h3><small class=\"note\">" + date.getDate() + "." + String(date.getMonth() + 1).padStart(2, "0") + "</small></div>" +
-        (items.length ? '<ul class="wlist">' + items.map(function (x) {
-          return '<li class="pitem' + (x.it.done ? " pdone" : "") + '" data-i="' + x.i + '">' +
-            '<button type="button" class="gc" role="checkbox" aria-checked="' + !!x.it.done + '" aria-label="Done: ' + esc(x.it.t) + '" data-w="done">' + (x.it.done ? "✓" : "") + "</button>" +
-            (x.it.time ? '<b class="ptime">' + esc(x.it.time) + "</b>" : "") + "<span>" + esc(x.it.t) + "</span>" +
-            '<button type="button" class="x" data-w="del" aria-label="Delete">✕</button></li>';
-        }).join("") + "</ul>" : '<small class="note" style="text-align:left">' + (past ? "Done and cleared" : "Nothing planned") + "</small>");
-      box.appendChild(sec);
+    var today = dayKey(Date.now()), cur = today.slice(0, 7);
+    plans.forEach(function (x) {
+      if (x.id.indexOf("week-") === 0 || (x.id.indexOf("cal-") === 0 && x.id.slice(4) < cur)) write(planStore.remove(x.id));
     });
-    var sel = $("weekDay"), keep = sel.value;
-    sel.innerHTML = DAYS.map(function (name, d) { return '<option value="' + d + '"' + (d < t ? " disabled" : "") + ">" + name + "</option>"; }).join("");
-    sel.value = keep !== "" && +keep >= t ? keep : String(t);
-    $("weekThis").setAttribute("aria-pressed", weekOff === 0);
-    $("weekNext").setAttribute("aria-pressed", weekOff === 1);
+    var p = calDoc(cur), kept = p.items.filter(function (it) { return it.date >= today; });
+    if (kept.length !== p.items.length) { p.items = kept; saveCal(p); }
   }
-  function weekCompare(a, b) { return a.d - b.d || (a.time ? (b.time ? (a.time < b.time ? -1 : a.time > b.time ? 1 : 0) : -1) : (b.time ? 1 : 0)); }
+  function dayList(dk) {
+    var mk = dk.slice(0, 7), items = calDoc(mk).items.map(function (it, i) { return { it: it, i: i }; }).filter(function (x) { return x.it.date === dk; });
+    if (!items.length) return "";
+    return '<ul class="wlist">' + items.map(function (x) {
+      return '<li class="pitem' + (x.it.done ? " pdone" : "") + '" data-mk="' + mk + '" data-i="' + x.i + '">' +
+        '<button type="button" class="gc" role="checkbox" aria-checked="' + !!x.it.done + '" aria-label="Done: ' + esc(x.it.t) + '" data-w="done">' + (x.it.done ? "✓" : "") + "</button>" +
+        (x.it.time ? '<b class="ptime">' + esc(x.it.time) + "</b>" : "") + "<span>" + esc(x.it.t) + "</span>" +
+        '<button type="button" class="x" data-w="del" aria-label="Delete">✕</button></li>';
+    }).join("") + "</ul>";
+  }
+  function dayCard(dk, title) {
+    var today = dayKey(Date.now()), d = dk.split("-"), list = dayList(dk);
+    var past = dk < today, sec = document.createElement("section");
+    sec.className = "goal wday" + (past ? " wpast" : "") + (dk === today ? " wtoday" : "");
+    sec.innerHTML = '<div class="goal-h"><h3>' + title + (dk === today ? " <em>today</em>" : "") + '</h3><small class="note">' + +d[2] + "." + d[1] + "</small></div>" +
+      (list || '<small class="note" style="text-align:left">' + (past ? "Done and cleared" : "Nothing planned") + "</small>");
+    return sec;
+  }
+  function renderMonth(box, today) {
+    var first = new Date(); first.setHours(12, 0, 0, 0); first.setDate(1); first.setMonth(first.getMonth() + monthOff);
+    var y = first.getFullYear(), m = first.getMonth(), mk = y + "-" + String(m + 1).padStart(2, "0");
+    var lead = (first.getDay() + 6) % 7, count = new Date(y, m + 1, 0).getDate(), doc = calDoc(mk);
+    var head = document.createElement("div"); head.className = "mhead";
+    head.innerHTML = '<button type="button" data-m="-1" aria-label="Previous month"' + (monthOff === 0 ? " disabled" : "") + '>‹</button><b>' + MONTHS[m] + " " + y + '</b><button type="button" data-m="1" aria-label="Next month">›</button>';
+    box.appendChild(head);
+    var grid = document.createElement("div"); grid.className = "mgrid";
+    var h = DAYS.map(function (n) { return "<small>" + n.slice(0, 3) + "</small>"; }).join("") + new Array(lead + 1).join("<i></i>");
+    for (var d = 1; d <= count; d++) {
+      var dk = mk + "-" + String(d).padStart(2, "0");
+      var n = doc.items.filter(function (it) { return it.date === dk; }).length;
+      h += '<button type="button" class="mcell' + (dk === today ? " mtoday" : "") + (dk === selDate ? " msel" : "") + '" data-d="' + dk + '"' + (dk < today ? " disabled" : "") + ' aria-label="' + d + " " + MONTHS[m] + (n ? ", " + n + " planned" : "") + '">' + d + (n ? "<u>" + n + "</u>" : "") + "</button>";
+    }
+    grid.innerHTML = h; box.appendChild(grid);
+    if (selDate && selDate.slice(0, 7) === mk) {
+      var s = selDate.split("-");
+      box.appendChild(dayCard(selDate, DAYS[(new Date(+s[0], +s[1] - 1, +s[2]).getDay() + 6) % 7]));
+    } else {
+      var hint = document.createElement("p"); hint.className = "note"; hint.textContent = "Tap a day to see or add what is planned.";
+      box.appendChild(hint);
+    }
+  }
+  function renderWeek() {
+    pruneCal();
+    var today = dayKey(Date.now()), box = $("weekDays"); box.innerHTML = "";
+    if (calView === "m") renderMonth(box, today);
+    else {
+      var start = weekStart(calView === "w1" ? 1 : 0);
+      DAYS.forEach(function (name, d) { box.appendChild(dayCard(dayKey(dateAt(start, d).getTime()), name)); });
+    }
+    var di = $("weekDate"); di.min = today;
+    if (!di.value || di.value < today) di.value = today;
+    $("weekThis").setAttribute("aria-pressed", calView === "w0");
+    $("weekNext").setAttribute("aria-pressed", calView === "w1");
+    $("weekMonth").setAttribute("aria-pressed", calView === "m");
+  }
+  function weekCompare(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : (a.time ? (b.time ? (a.time < b.time ? -1 : a.time > b.time ? 1 : 0) : -1) : (b.time ? 1 : 0)); }
   $("weekForm").addEventListener("submit", function (e) {
     e.preventDefault();
-    var txt = $("weekText").value.trim(); if (!txt) return;
-    var p = weekDoc(weekOff), day = +$("weekDay").value;
-    p.items.push({ d: day, t: txt.slice(0, 140), time: $("weekTime").value, done: false });
+    var txt = $("weekText").value.trim(), dk = $("weekDate").value; if (!txt) return;
+    if (!dk || dk < dayKey(Date.now())) { toast("Pick today or a later day"); return; }
+    var p = calDoc(dk.slice(0, 7));
+    p.items.push({ date: dk, t: txt.slice(0, 140), time: $("weekTime").value, done: false });
     p.items = p.items.map(function (it, i) { return { it: it, i: i }; }).sort(function (a, b) { return weekCompare(a.it, b.it) || a.i - b.i; }).map(function (x) { return x.it; });
-    $("weekText").value = ""; $("weekTime").value = ""; saveWeek(p); $("weekText").focus();
+    $("weekText").value = ""; $("weekTime").value = ""; saveCal(p); $("weekText").focus();
   });
   $("weekDays").addEventListener("click", function (e) {
+    var nav = e.target.closest("[data-m]");
+    if (nav) { monthOff = Math.max(0, monthOff + +nav.dataset.m); selDate = ""; renderWeek(); return; }
+    var cell = e.target.closest("[data-d]");
+    if (cell) { selDate = cell.dataset.d; $("weekDate").value = selDate; renderWeek(); return; }
     var b = e.target.closest("[data-w]"); if (!b) return;
-    var p = weekDoc(weekOff), i = +b.closest(".pitem").dataset.i, it = p.items[i]; if (!it) return;
+    var li = b.closest(".pitem"), p = calDoc(li.dataset.mk), i = +li.dataset.i, it = p.items[i]; if (!it) return;
     if (b.dataset.w === "done") { it.done = !it.done; if (it.done) burst(b, true); } else p.items.splice(i, 1);
-    saveWeek(p);
+    saveCal(p);
   });
-  $("weekThis").addEventListener("click", function () { weekOff = 0; renderWeek(); });
-  $("weekNext").addEventListener("click", function () { weekOff = 1; renderWeek(); });
+  $("weekThis").addEventListener("click", function () { calView = "w0"; renderWeek(); });
+  $("weekNext").addEventListener("click", function () { calView = "w1"; renderWeek(); });
+  $("weekMonth").addEventListener("click", function () { calView = "m"; renderWeek(); });
 
   var TABS = { today: ["tabToday", "viewToday"], week: ["tabWeek", "viewWeek"], goals: ["tabGoals", "viewGoals"], habits: ["tabHabits", "viewHabits"], plan: ["tabPlan", "viewPlan"] };
   function showTab(name) {

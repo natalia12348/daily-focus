@@ -220,9 +220,9 @@ dialog .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .pitem .x:disabled { opacity: .25; }
 #planTime { flex: none; width: 112px; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 0 8px; font: inherit; font-size: 16px; color: inherit; }
 #planPasteBox textarea { width: 100%; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 12px 14px; font: inherit; font-size: 16px; color: inherit; resize: vertical; }
-#weekDay { flex: 1; min-width: 0; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 12px 10px; font: inherit; font-size: 16px; color: inherit; }
+#weekDate { flex: 1; min-width: 0; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 12px 10px; font: inherit; font-size: 16px; color: inherit; }
 #weekTime { flex: none; width: 112px; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 0 8px; font: inherit; font-size: 16px; color: inherit; }
-.wkswitch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: var(--surface-2); padding: 5px; border-radius: 14px; }
+.wkswitch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; background: var(--surface-2); padding: 5px; border-radius: 14px; }
 .wkswitch button { border: 0; background: transparent; border-radius: 10px; padding: 9px; font-weight: 700; color: var(--muted); }
 .wkswitch button[aria-pressed="true"] { background: var(--surface); color: var(--accent); box-shadow: var(--shadow); }
 .wday { gap: 8px; padding: 14px 16px; }
@@ -230,3 +230,14 @@ dialog .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .wday .goal-h h3 em { font-style: normal; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-left: 6px; }
 .wtoday { outline: 3px solid var(--accent); }
 .wpast { opacity: .5; }
+.mhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mhead b { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
+.mhead button { width: 44px; height: 44px; border: 0; border-radius: 14px; background: var(--surface-2); color: var(--accent); font-size: 24px; line-height: 1; }
+.mhead button:disabled { opacity: .3; }
+.mgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: var(--surface); border-radius: 20px; padding: 10px; box-shadow: var(--shadow); }
+.mgrid small { text-align: center; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding-bottom: 4px; }
+.mcell { position: relative; aspect-ratio: 1; border: 2px solid transparent; border-radius: 12px; background: var(--bg); color: inherit; font: inherit; font-weight: 700; font-size: 16px; padding: 0; }
+.mcell:disabled { opacity: .3; background: transparent; }
+.mcell u { position: absolute; right: 3px; bottom: 2px; min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-fg); font-size: 11px; line-height: 16px; text-decoration: none; }
+.mtoday { border-color: var(--line); color: var(--accent); }
+.msel { border-color: var(--accent); background: var(--surface-2); }
