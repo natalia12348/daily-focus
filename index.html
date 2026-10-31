@@ -63,6 +63,7 @@
 
   <div class="tabs" role="tablist">
     <button type="button" role="tab" id="tabToday" aria-selected="true">Today</button>
+    <button type="button" role="tab" id="tabWeek" aria-selected="false">Week</button>
     <button type="button" role="tab" id="tabGoals" aria-selected="false">My goals</button>
     <button type="button" role="tab" id="tabHabits" aria-selected="false">Habits</button>
     <button type="button" role="tab" id="tabPlan" aria-selected="false">Plan of the day</button>
@@ -98,6 +99,24 @@
   </details>
   </div>
 
+  <div class="view" id="viewWeek" hidden>
+    <form class="add" id="weekForm">
+      <div class="row">
+        <select id="weekDay" aria-label="Day"></select>
+        <input type="time" id="weekTime" aria-label="Time (optional)">
+      </div>
+      <div class="row">
+        <input type="text" id="weekText" placeholder="What is happening?" maxlength="140" autocomplete="off" aria-label="Week entry">
+        <button class="btn-main" type="submit">Add</button>
+      </div>
+    </form>
+    <div class="wkswitch" role="group" aria-label="Week">
+      <button type="button" id="weekThis" aria-pressed="true">This week</button>
+      <button type="button" id="weekNext" aria-pressed="false">Next week</button>
+    </div>
+    <div id="weekDays" class="view"></div>
+    <p class="note">Days that have passed clear themselves, so each week starts fresh.</p>
+  </div>
   <div class="view" id="viewGoals" hidden>
     <form class="add" id="goalForm">
       <div class="row">

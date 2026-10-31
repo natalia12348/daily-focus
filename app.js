@@ -470,7 +470,75 @@
     savePlan(p);
   });
 
-  var TABS = { today: ["tabToday", "viewToday"], goals: ["tabGoals", "viewGoals"], habits: ["tabHabits", "viewHabits"], plan: ["tabPlan", "viewPlan"] };
+  /* ---------- week planner ---------- */
+  var DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  var weekOff = 0;
+  function weekStart(off) {
+    var d = new Date(); d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7 + 7 * off);
+    return d;
+  }
+  function weekId(off) { return "week-" + dayKey(weekStart(off).getTime()); }
+  function todayIdx() { return (new Date().getDay() + 6) % 7; }
+  function weekDoc(off) {
+    var id = weekId(off);
+    var p = plans.filter(function (x) { return x.id === id; })[0];
+    return p ? JSON.parse(JSON.stringify(p)) : { id: id, items: [] };
+  }
+  /* finished days and old weeks are dropped, so every week starts empty */
+  function pruneWeeks() {
+    if (!planStore) return;
+    var cur = weekId(0);
+    plans.forEach(function (x) { if (x.id.indexOf("week-") === 0 && x.id < cur) write(planStore.remove(x.id)); });
+    var p = weekDoc(0), t = todayIdx();
+    var kept = p.items.filter(function (it) { return it.d >= t; });
+    if (kept.length !== p.items.length) { p.items = kept; saveWeek(p); }
+  }
+  function saveWeek(p) { write(planStore.put(p)); }
+  function renderWeek() {
+    pruneWeeks();
+    var p = weekDoc(weekOff), t = weekOff === 0 ? todayIdx() : 0, box = $("weekDays"), start = weekStart(weekOff);
+    box.innerHTML = "";
+    DAYS.forEach(function (name, d) {
+      var date = new Date(start.getTime()); date.setDate(start.getDate() + d);
+      var past = d < t, isToday = weekOff === 0 && d === t;
+      var items = p.items.map(function (it, i) { return { it: it, i: i }; }).filter(function (x) { return x.it.d === d; });
+      var sec = document.createElement("section");
+      sec.className = "goal wday" + (past ? " wpast" : "") + (isToday ? " wtoday" : "");
+      sec.innerHTML = '<div class="goal-h"><h3>' + name + (isToday ? " <em>today</em>" : "") + "</h3><small class=\"note\">" + date.getDate() + "." + String(date.getMonth() + 1).padStart(2, "0") + "</small></div>" +
+        (items.length ? '<ul class="wlist">' + items.map(function (x) {
+          return '<li class="pitem' + (x.it.done ? " pdone" : "") + '" data-i="' + x.i + '">' +
+            '<button type="button" class="gc" role="checkbox" aria-checked="' + !!x.it.done + '" aria-label="Done: ' + esc(x.it.t) + '" data-w="done">' + (x.it.done ? "✓" : "") + "</button>" +
+            (x.it.time ? '<b class="ptime">' + esc(x.it.time) + "</b>" : "") + "<span>" + esc(x.it.t) + "</span>" +
+            '<button type="button" class="x" data-w="del" aria-label="Delete">✕</button></li>';
+        }).join("") + "</ul>" : '<small class="note" style="text-align:left">' + (past ? "Done and cleared" : "Nothing planned") + "</small>");
+      box.appendChild(sec);
+    });
+    var sel = $("weekDay"), keep = sel.value;
+    sel.innerHTML = DAYS.map(function (name, d) { return '<option value="' + d + '"' + (d < t ? " disabled" : "") + ">" + name + "</option>"; }).join("");
+    sel.value = keep !== "" && +keep >= t ? keep : String(t);
+    $("weekThis").setAttribute("aria-pressed", weekOff === 0);
+    $("weekNext").setAttribute("aria-pressed", weekOff === 1);
+  }
+  function weekCompare(a, b) { return a.d - b.d || (a.time ? (b.time ? (a.time < b.time ? -1 : a.time > b.time ? 1 : 0) : -1) : (b.time ? 1 : 0)); }
+  $("weekForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var txt = $("weekText").value.trim(); if (!txt) return;
+    var p = weekDoc(weekOff), day = +$("weekDay").value;
+    p.items.push({ d: day, t: txt.slice(0, 140), time: $("weekTime").value, done: false });
+    p.items = p.items.map(function (it, i) { return { it: it, i: i }; }).sort(function (a, b) { return weekCompare(a.it, b.it) || a.i - b.i; }).map(function (x) { return x.it; });
+    $("weekText").value = ""; $("weekTime").value = ""; saveWeek(p); $("weekText").focus();
+  });
+  $("weekDays").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-w]"); if (!b) return;
+    var p = weekDoc(weekOff), i = +b.closest(".pitem").dataset.i, it = p.items[i]; if (!it) return;
+    if (b.dataset.w === "done") { it.done = !it.done; if (it.done) burst(b, true); } else p.items.splice(i, 1);
+    saveWeek(p);
+  });
+  $("weekThis").addEventListener("click", function () { weekOff = 0; renderWeek(); });
+  $("weekNext").addEventListener("click", function () { weekOff = 1; renderWeek(); });
+
+  var TABS = { today: ["tabToday", "viewToday"], week: ["tabWeek", "viewWeek"], goals: ["tabGoals", "viewGoals"], habits: ["tabHabits", "viewHabits"], plan: ["tabPlan", "viewPlan"] };
   function showTab(name) {
     Object.keys(TABS).forEach(function (k) {
       $(TABS[k][1]).hidden = k !== name;
@@ -478,6 +546,7 @@
     });
   }
   $("tabToday").addEventListener("click", function () { showTab("today"); });
+  $("tabWeek").addEventListener("click", function () { showTab("week"); renderWeek(); });
   $("tabGoals").addEventListener("click", function () { showTab("goals"); });
   $("tabHabits").addEventListener("click", function () { showTab("habits"); });
   $("tabPlan").addEventListener("click", function () { showTab("plan"); });
@@ -534,7 +603,7 @@
     s.subscribe(function (list) { tasks = list; render(); });
     gs.subscribe(function (list) { goals = list; renderGoals(); });
     hs.subscribe(function (list) { habits = list; renderHabits(); });
-    ps.subscribe(function (list) { plans = list; renderPlan(); });
+    ps.subscribe(function (list) { plans = list; renderPlan(); renderWeek(); });
   }
   render(); renderGoals(); renderHabits(); renderPlan();
 
