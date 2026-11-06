@@ -52,17 +52,19 @@
     }).join("");
     li.innerHTML =
       '<div class="line"><button type="button" class="chk" role="checkbox" aria-checked="' + !!t.done + '" aria-label="Check off: ' + esc(t.text) + '" data-act="toggle">' + CHECK + "</button>" +
+      (t.time ? '<b class="ptime">' + esc(t.time) + "</b>" : "") +
       '<span class="txt">' + esc(t.text) + '</span><span class="tag">' + PR[t.priority].n + "</span></div>" +
       (steps ? '<ul class="steps">' + steps + "</ul>" : "") +
       '<div class="tools">' +
       (!t.done ? '<button type="button" class="ai" data-act="split">✨ Break into steps</button>' : "") +
+      (!t.done ? '<label class="tset">🕒 <input type="time" data-time value="' + esc(t.time || "") + '" aria-label="Time for: ' + esc(t.text) + '"></label>' : "") +
       '<button type="button" data-act="del">Delete</button></div>';
     li.dataset.id = t.id;
     return li;
   }
 
   function render() {
-    var open = tasks.filter(function (t) { return !t.done; }).sort(function (a, b) { return a.priority - b.priority || a.created - b.created; });
+    var open = tasks.filter(function (t) { return !t.done; }).sort(function (a, b) { return a.priority - b.priority || (a.time ? (b.time ? (a.time < b.time ? -1 : a.time > b.time ? 1 : 0) : -1) : (b.time ? 1 : 0)) || a.created - b.created; });
     var today = dayKey(Date.now());
     var doneAll = tasks.filter(function (t) { return t.done; }).sort(function (a, b) { return b.doneAt - a.doneAt; });
     var doneToday = doneAll.filter(function (t) { return t.doneAt && dayKey(t.doneAt) === today; }).length;
@@ -130,8 +132,10 @@
     var v = $("newText").value.trim();
     if (!v) { $("newText").focus(); return; }
     var p = +document.querySelector("input[name=prio]:checked").value;
-    write(store.put({ id: newId(), text: v, priority: p, done: false, created: Date.now(), steps: [] }));
-    $("newText").value = ""; $("newText").focus();
+    var tm = $("newTime").value, m = v.match(/^([01]?\d|2[0-3])[:.]([0-5]\d)\s+(.+)$/);
+    if (!tm && m) { tm = String(m[1]).padStart(2, "0") + ":" + m[2]; v = m[3].trim(); }
+    write(store.put({ id: newId(), text: v, priority: p, done: false, created: Date.now(), steps: [], time: tm || "" }));
+    $("newText").value = ""; $("newTime").value = ""; $("newText").focus();
   });
 
   function toggle(t, origin) {
@@ -194,6 +198,11 @@
     if (b.dataset.act === "split") splitTask(t, b);
   }
   $("openList").addEventListener("click", onList);
+  $("openList").addEventListener("change", function (e) {
+    if (!e.target.matches("[data-time]")) return;
+    var li = e.target.closest(".task"), t = li && byId(li.dataset.id);
+    if (t) write(store.put(Object.assign({}, t, { time: e.target.value })));
+  });
   $("doneList").addEventListener("click", onList);
 
   /* ---------- confetti ---------- */

@@ -241,3 +241,9 @@ dialog .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .mcell u { position: absolute; right: 3px; bottom: 2px; min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-fg); font-size: 11px; line-height: 16px; text-decoration: none; }
 .mtoday { border-color: var(--line); color: var(--accent); }
 .msel { border-color: var(--accent); background: var(--surface-2); }
+
+.add input[type=time] { flex: none; width: 112px; border: 2px solid var(--line); background: var(--bg); border-radius: 14px; padding: 10px; font-size: 16px; color: var(--ink, inherit); }
+.line .ptime { flex: none; color: var(--accent); font-variant-numeric: tabular-nums; font-size: 15px; }
+.tools .tset { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 2px 8px; font-size: 13px; color: var(--muted); }
+.tools .tset input { border: 0; background: transparent; font-size: 13px; color: inherit; padding: 4px 0; }
+@media (max-width: 420px) { .add input[type=time] { width: 96px; } }
