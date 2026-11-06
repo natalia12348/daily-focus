@@ -247,3 +247,10 @@ dialog .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 .tools .tset { display: inline-flex; align-items: center; gap: 4px; background: var(--surface-2); border-radius: 10px; padding: 2px 8px; font-size: 13px; color: var(--muted); }
 .tools .tset input { border: 0; background: transparent; font-size: 13px; color: inherit; padding: 4px 0; }
 @media (max-width: 420px) { .add input[type=time] { width: 96px; } }
+
+.add .to { flex: none; align-self: center; color: var(--muted); }
+.add .row input[type=time] { width: 104px; padding: 10px 6px; }
+.dur { margin-left: 6px; color: var(--muted); font-size: 13px; font-weight: 400; }
+.pitem .ptime, .line .ptime { white-space: nowrap; }
+.tools .tset input { width: 82px; }
+@media (max-width: 520px) { .add .row { flex-wrap: wrap; } .add .row input[type=text] { flex: 1 1 100%; order: 5; } .add .row .btn-main { order: 4; margin-left: auto; } }

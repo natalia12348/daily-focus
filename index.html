@@ -74,7 +74,7 @@
   <form class="add" id="addForm">
     <div class="row">
       <input type="text" id="newText" placeholder="What do you need to do?" maxlength="140" autocomplete="off" aria-label="New task">
-      <input type="time" id="newTime" aria-label="Time (optional)">
+      <input type="time" id="newTime" aria-label="Time from (optional)"><span class="to" aria-hidden="true">–</span><input type="time" id="newEnd" aria-label="End time (optional)">
       <button class="btn-main" type="submit">Add</button>
     </div>
     <div class="prios" role="radiogroup" aria-label="Priority">
@@ -104,7 +104,7 @@
     <form class="add" id="weekForm">
       <div class="row">
         <input type="date" id="weekDate" aria-label="Date">
-        <input type="time" id="weekTime" aria-label="Time (optional)">
+        <input type="time" id="weekTime" aria-label="Time from (optional)"><span class="to" aria-hidden="true">–</span><input type="time" id="weekEnd" aria-label="End time (optional)">
       </div>
       <div class="row">
         <input type="text" id="weekText" placeholder="What is happening?" maxlength="140" autocomplete="off" aria-label="Week entry">
@@ -153,7 +153,7 @@
   <div class="view" id="viewPlan" hidden>
     <form class="add" id="planForm">
       <div class="row">
-        <input type="time" id="planTime" aria-label="Time (optional)">
+        <input type="time" id="planTime" aria-label="Time from (optional)"><span class="to" aria-hidden="true">–</span><input type="time" id="planEnd" aria-label="End time (optional)">
         <input type="text" id="planText" placeholder="Next thing on your plan" maxlength="140" autocomplete="off" aria-label="Plan step">
         <button class="btn-main" type="submit">Add</button>
       </div>

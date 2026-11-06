@@ -11,6 +11,19 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   }
   function stageName(n) { return String(n).replace(/^\s*(?:etap|stage|phase)\s*\d+\s*[:.\-–]\s*/i, ""); }
+  function tl(it) { return it.time ? it.time + (it.end ? "\u2013" + it.end : "") : ""; }
+  function mins(t) { var p = t.split(":"); return +p[0] * 60 + +p[1]; }
+  function dur(it) {
+    if (!it.time || !it.end) return "";
+    var d = mins(it.end) - mins(it.time);
+    return d > 0 ? " (" + (d >= 60 ? Math.floor(d / 60) + "h" + (d % 60 ? " " + d % 60 + "min" : "") : d + "min") + ")" : "";
+  }
+  function endOk(tm, en) {
+    if (!en) return "";
+    if (!tm) { toast("Set a start time first"); return null; }
+    if (mins(en) <= mins(tm)) { toast("The end time must be after the start"); return null; }
+    return en;
+  }
   function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
   function toast(msg) {
     var t = $("toast"); t.textContent = msg; t.hidden = false;
@@ -52,12 +65,12 @@
     }).join("");
     li.innerHTML =
       '<div class="line"><button type="button" class="chk" role="checkbox" aria-checked="' + !!t.done + '" aria-label="Check off: ' + esc(t.text) + '" data-act="toggle">' + CHECK + "</button>" +
-      (t.time ? '<b class="ptime">' + esc(t.time) + "</b>" : "") +
-      '<span class="txt">' + esc(t.text) + '</span><span class="tag">' + PR[t.priority].n + "</span></div>" +
+      (t.time ? '<b class="ptime">' + esc(tl(t)) + "</b>" : "") +
+      '<span class="txt">' + esc(t.text) + (t.time && t.end ? '<small class="dur">' + dur(t) + "</small>" : "") + '</span><span class="tag">' + PR[t.priority].n + "</span></div>" +
       (steps ? '<ul class="steps">' + steps + "</ul>" : "") +
       '<div class="tools">' +
       (!t.done ? '<button type="button" class="ai" data-act="split">✨ Break into steps</button>' : "") +
-      (!t.done ? '<label class="tset">🕒 <input type="time" data-time value="' + esc(t.time || "") + '" aria-label="Time for: ' + esc(t.text) + '"></label>' : "") +
+      (!t.done ? '<label class="tset">🕒 <input type="time" data-time value="' + esc(t.time || "") + '" aria-label="Start time for: ' + esc(t.text) + '"> \u2013 <input type="time" data-end value="' + esc(t.end || "") + '" aria-label="End time for: ' + esc(t.text) + '"></label>' : "") +
       '<button type="button" data-act="del">Delete</button></div>';
     li.dataset.id = t.id;
     return li;
@@ -132,10 +145,15 @@
     var v = $("newText").value.trim();
     if (!v) { $("newText").focus(); return; }
     var p = +document.querySelector("input[name=prio]:checked").value;
-    var tm = $("newTime").value, m = v.match(/^([01]?\d|2[0-3])[:.]([0-5]\d)\s+(.+)$/);
-    if (!tm && m) { tm = String(m[1]).padStart(2, "0") + ":" + m[2]; v = m[3].trim(); }
-    write(store.put({ id: newId(), text: v, priority: p, done: false, created: Date.now(), steps: [], time: tm || "" }));
-    $("newText").value = ""; $("newTime").value = ""; $("newText").focus();
+    var tm = $("newTime").value, en = $("newEnd").value;
+    var m = v.match(/^([01]?\d|2[0-3])[:.]([0-5]\d)(?:\s*[-\u2013]\s*([01]?\d|2[0-3])[:.]([0-5]\d))?\s+(.+)$/);
+    if (!tm && m) {
+      tm = String(m[1]).padStart(2, "0") + ":" + m[2]; v = m[5].trim();
+      if (m[3]) en = String(m[3]).padStart(2, "0") + ":" + m[4];
+    }
+    en = endOk(tm, en); if (en === null) return;
+    write(store.put({ id: newId(), text: v, priority: p, done: false, created: Date.now(), steps: [], time: tm || "", end: en }));
+    $("newText").value = ""; $("newTime").value = ""; $("newEnd").value = ""; $("newText").focus();
   });
 
   function toggle(t, origin) {
@@ -199,9 +217,13 @@
   }
   $("openList").addEventListener("click", onList);
   $("openList").addEventListener("change", function (e) {
-    if (!e.target.matches("[data-time]")) return;
-    var li = e.target.closest(".task"), t = li && byId(li.dataset.id);
-    if (t) write(store.put(Object.assign({}, t, { time: e.target.value })));
+    var isT = e.target.matches("[data-time]"), isE = e.target.matches("[data-end]");
+    if (!isT && !isE) return;
+    var li = e.target.closest(".task"), t = li && byId(li.dataset.id); if (!t) return;
+    var tm = isT ? e.target.value : t.time, en = isE ? e.target.value : t.end;
+    if (isT && !tm) en = "";
+    var ok = endOk(tm, en); if (ok === null) { render(); return; }
+    write(store.put(Object.assign({}, t, { time: tm || "", end: ok })));
   });
   $("doneList").addEventListener("click", onList);
 
@@ -426,7 +448,7 @@
       var li = document.createElement("li");
       li.className = "pitem" + (it.done ? " pdone" : ""); li.dataset.i = i;
       li.innerHTML = '<button type="button" class="gc" role="checkbox" aria-checked="' + !!it.done + '" aria-label="Done: ' + esc(it.t) + '" data-p="done">' + (it.done ? "\u2713" : "") + "</button>" +
-        (it.time ? '<b class="ptime">' + esc(it.time) + "</b>" : "") + "<span>" + esc(it.t) + "</span>" +
+        (it.time ? '<b class="ptime">' + esc(tl(it)) + "</b>" : "") + "<span>" + esc(it.t) + (it.end ? '<small class="dur">' + dur(it) + "</small>" : "") + "</span>" +
         '<button type="button" class="x" data-p="up" aria-label="Move up"' + (i === 0 ? " disabled" : "") + '>\u2191</button>' +
         '<button type="button" class="x" data-p="down" aria-label="Move down"' + (i === p.items.length - 1 ? " disabled" : "") + '>\u2193</button>' +
         '<button type="button" class="x" data-p="del" aria-label="Delete">\u2715</button>';
@@ -441,8 +463,15 @@
   function savePlan(p) { write(planStore.put(p)); }
   function parsePlanLine(line) {
     line = line.replace(/^\s*(?:[-*\u2022]|\d+[.)])\s+/, "").trim();
-    var m = line.match(/^(\d{1,2})[:.](\d{2})\s*[-\u2013:]?\s*(.+)$/);
-    if (m && +m[1] < 24 && +m[2] < 60) return { t: m[3].trim().slice(0, 140), time: String(m[1]).padStart(2, "0") + ":" + m[2], done: false };
+    var m = line.match(/^(\d{1,2})[:.](\d{2})(?:\s*[-\u2013]\s*(\d{1,2})[:.](\d{2}))?\s*[-\u2013:]?\s*(.+)$/);
+    if (m && +m[1] < 24 && +m[2] < 60) {
+      var it = { t: m[5].trim().slice(0, 140), time: String(m[1]).padStart(2, "0") + ":" + m[2], end: "", done: false };
+      if (m[3] && +m[3] < 24 && +m[4] < 60) {
+        var en = String(m[3]).padStart(2, "0") + ":" + m[4];
+        if (mins(en) > mins(it.time)) it.end = en;
+      }
+      return it;
+    }
     return line ? { t: line.slice(0, 140), time: "", done: false } : null;
   }
   /* timed steps slot in by time; steps without a time stay where they are (at the end) */
@@ -455,10 +484,11 @@
   $("planForm").addEventListener("submit", function (e) {
     e.preventDefault();
     var t = $("planText").value.trim(); if (!t) return;
-    var it = parsePlanLine(t), tm = $("planTime").value;
-    if (tm) it = { t: t.slice(0, 140), time: tm, done: false };
+    var it = parsePlanLine(t), tm = $("planTime").value, en = endOk(tm, $("planEnd").value);
+    if (en === null) return;
+    if (tm) it = { t: t.slice(0, 140), time: tm, end: en, done: false };
     var p = todayPlan(); addToPlan(p, it);
-    $("planText").value = ""; $("planTime").value = ""; savePlan(p); $("planText").focus();
+    $("planText").value = ""; $("planTime").value = ""; $("planEnd").value = ""; savePlan(p); $("planText").focus();
   });
   $("planPasteGo").addEventListener("click", function () {
     var items = $("planPaste").value.split(/\r?\n/).map(parsePlanLine).filter(Boolean);
@@ -510,7 +540,7 @@
     return '<ul class="wlist">' + items.map(function (x) {
       return '<li class="pitem' + (x.it.done ? " pdone" : "") + '" data-mk="' + mk + '" data-i="' + x.i + '">' +
         '<button type="button" class="gc" role="checkbox" aria-checked="' + !!x.it.done + '" aria-label="Done: ' + esc(x.it.t) + '" data-w="done">' + (x.it.done ? "✓" : "") + "</button>" +
-        (x.it.time ? '<b class="ptime">' + esc(x.it.time) + "</b>" : "") + "<span>" + esc(x.it.t) + "</span>" +
+        (x.it.time ? '<b class="ptime">' + esc(tl(x.it)) + "</b>" : "") + "<span>" + esc(x.it.t) + (x.it.end ? '<small class="dur">' + dur(x.it) + "</small>" : "") + "</span>" +
         '<button type="button" class="x" data-w="del" aria-label="Delete">✕</button></li>';
     }).join("") + "</ul>";
   }
@@ -564,10 +594,12 @@
     e.preventDefault();
     var txt = $("weekText").value.trim(), dk = $("weekDate").value; if (!txt) return;
     if (!dk || dk < dayKey(Date.now())) { toast("Pick today or a later day"); return; }
+    var wt = $("weekTime").value, we = endOk(wt, $("weekEnd").value);
+    if (we === null) return;
     var p = calDoc(dk.slice(0, 7));
-    p.items.push({ date: dk, t: txt.slice(0, 140), time: $("weekTime").value, done: false });
+    p.items.push({ date: dk, t: txt.slice(0, 140), time: wt, end: we, done: false });
     p.items = p.items.map(function (it, i) { return { it: it, i: i }; }).sort(function (a, b) { return weekCompare(a.it, b.it) || a.i - b.i; }).map(function (x) { return x.it; });
-    $("weekText").value = ""; $("weekTime").value = ""; saveCal(p); $("weekText").focus();
+    $("weekText").value = ""; $("weekTime").value = ""; $("weekEnd").value = ""; saveCal(p); $("weekText").focus();
   });
   $("weekDays").addEventListener("click", function (e) {
     var nav = e.target.closest("[data-m]");
